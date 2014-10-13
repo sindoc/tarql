@@ -2,7 +2,8 @@ package org.deri.tarql;
 
 import java.io.IOException;
 
-import org.deri.tarql.CSVOptions.ParseResult;
+import org.deri.tarql.csv.CSVFormat;
+import org.deri.tarql.csv.CSVFormat.ParseResult;
 
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.shared.JenaException;
@@ -14,40 +15,40 @@ import com.hp.hpl.jena.util.FileManager;
 public class TarqlQueryExecutionFactory {
 
 	public static TarqlQueryExecution create(TarqlQuery query) throws IOException {
-		return create(query, FileManager.get(), new CSVOptions());
+		return create(query, FileManager.get(), new CSVFormat());
 	}
 
-	public static TarqlQueryExecution create(TarqlQuery query, CSVOptions options) throws IOException {
+	public static TarqlQueryExecution create(TarqlQuery query, CSVFormat options) throws IOException {
 		return create(query, FileManager.get(), options);
 	}
 
 	public static TarqlQueryExecution create(TarqlQuery query, FileManager fm) throws IOException {
 		String filenameOrURL = getSingleFromClause(query.getQueries().get(0), fm);
-		ParseResult parseResult = CSVOptions.parseIRI(filenameOrURL);
+		ParseResult parseResult = CSVFormat.parseIRI(filenameOrURL);
 		return create(query, InputStreamSource.fromFilenameOrIRI(parseResult.getRemainingIRI(), fm), parseResult.getOptions());
 	}
 
-	public static TarqlQueryExecution create(TarqlQuery query, FileManager fm, CSVOptions options) throws IOException {
+	public static TarqlQueryExecution create(TarqlQuery query, FileManager fm, CSVFormat options) throws IOException {
 		String filenameOrURL = getSingleFromClause(query.getQueries().get(0), fm);
-		ParseResult parseResult = CSVOptions.parseIRI(filenameOrURL);
-		CSVOptions newOptions = new CSVOptions(parseResult.getOptions());
+		ParseResult parseResult = CSVFormat.parseIRI(filenameOrURL);
+		CSVFormat newOptions = new CSVFormat(parseResult.getOptions());
 		newOptions.overrideWith(options);
 		return create(query, InputStreamSource.fromFilenameOrIRI(parseResult.getRemainingIRI(), fm), newOptions);
 	}
 
 	public static TarqlQueryExecution create(TarqlQuery query, String filenameOrURL) throws IOException {
-		return create(query, InputStreamSource.fromFilenameOrIRI(filenameOrURL), new CSVOptions());
+		return create(query, InputStreamSource.fromFilenameOrIRI(filenameOrURL), new CSVFormat());
 	}
 
-	public static TarqlQueryExecution create(TarqlQuery query, String filenameOrURL, CSVOptions options) throws IOException {
+	public static TarqlQueryExecution create(TarqlQuery query, String filenameOrURL, CSVFormat options) throws IOException {
 		return create(query, InputStreamSource.fromFilenameOrIRI(filenameOrURL), options);
 	}
 	
 	public static TarqlQueryExecution create(TarqlQuery query, InputStreamSource input) {
-		return new TarqlQueryExecution(input, new CSVOptions(), query);
+		return new TarqlQueryExecution(input, new CSVFormat(), query);
 	}
 
-	public static TarqlQueryExecution create(TarqlQuery query, InputStreamSource input, CSVOptions options) {
+	public static TarqlQueryExecution create(TarqlQuery query, InputStreamSource input, CSVFormat options) {
 		return new TarqlQueryExecution(input, options, query);
 	}
 

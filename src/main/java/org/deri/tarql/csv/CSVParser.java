@@ -1,9 +1,12 @@
-package org.deri.tarql;
+package org.deri.tarql.csv;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.deri.tarql.TableParser;
+import org.deri.tarql.TarqlQuery;
 
 import au.com.bytecode.opencsv.CSVReader;
 
@@ -12,7 +15,6 @@ import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingHashMap;
-import com.hp.hpl.jena.util.iterator.ClosableIterator;
 
 /**
  * Parses a CSV file presented as a {@link Reader}, and delivers
@@ -23,7 +25,7 @@ import com.hp.hpl.jena.util.iterator.ClosableIterator;
  * Adds a <code>ROWNUM</code> column with the number of the
  * row.
  */
-public class CSVParser implements ClosableIterator<Binding> {
+public class CSVParser implements TableParser {
 
 	public static String getColumnName(int i) {
 		String var = "";
@@ -172,6 +174,7 @@ public class CSVParser implements ClosableIterator<Binding> {
 		}
 	}
 	
+	@Override
 	public List<Var> getVars() {
 		List<Var> varsWithRowNum = new ArrayList<Var>(vars);
 		varsWithRowNum.add(TarqlQuery.ROWNUM);

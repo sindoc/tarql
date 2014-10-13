@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.deri.tarql.csv.CSVParser;
 import org.junit.Test;
 
 import com.hp.hpl.jena.sparql.core.Var;

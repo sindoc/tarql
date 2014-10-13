@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
+import org.deri.tarql.csv.CSVFormat;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,12 +25,12 @@ public class TarqlTest {
 
 	//fixture
 	private String csv;
-	private CSVOptions options;
+	private CSVFormat options;
 	
 	@Before
 	public void setUp() {
 		csv = null;
-		options = new CSVOptions();
+		options = new CSVFormat();
 		options.setColumnNamesInFirstRow(false);
 	}
 	
@@ -71,7 +72,7 @@ public class TarqlTest {
 	
 	@Test
 	public void testSkipFirstRows() throws IOException {
-		options = new CSVOptions();
+		options = new CSVFormat();
 		csv = "First,Last\nAlice,Smith\nBob,Cook";
 		String query = "SELECT * {} OFFSET 1";
 		TarqlQuery tq =  new TarqlParser(new StringReader(query), null).getResult();
@@ -148,7 +149,7 @@ public class TarqlTest {
 	
 	@Test
 	public void testVarNamesFromHeadersViaOFFSET() throws IOException {
-		options = new CSVOptions();
+		options = new CSVFormat();
 		csv = "First,Last\nAlice,Smith";
 		String query = "SELECT * {} OFFSET 1";
 		TarqlQuery tq =  new TarqlParser(new StringReader(query), null).getResult();
@@ -158,7 +159,7 @@ public class TarqlTest {
 	
 	@Test
 	public void testVarNamesFromHeadersViaOFFSETCanBeOverridden() throws IOException {
-		options = new CSVOptions();
+		options = new CSVFormat();
 		options.setColumnNamesInFirstRow(false);
 		csv = "First,Last\nAlice,Smith";
 		String query = "SELECT * {} OFFSET 1";
@@ -201,7 +202,7 @@ public class TarqlTest {
 	
 	@Test
 	public void testROWNUM() throws IOException {
-		options = new CSVOptions();
+		options = new CSVFormat();
 		csv = "First,Last\nAlice,Smith\nBob,Miller";
 		String query = "SELECT ?ROWNUM ?First ?Last {} OFFSET 1";
 		TarqlQuery tq =  new TarqlParser(new StringReader(query), null).getResult();
@@ -211,7 +212,7 @@ public class TarqlTest {
 	
 	@Test
 	public void testAvoidNameClashWithROWNUM() throws IOException {
-		options = new CSVOptions();
+		options = new CSVFormat();
 		csv = "ROWNUM\nfoo";
 		String query = "SELECT ?ROWNUM ?a {} OFFSET 1";
 		TarqlQuery tq =  new TarqlParser(new StringReader(query), null).getResult();
@@ -220,7 +221,7 @@ public class TarqlTest {
 	
 	@Test
 	public void testOptionsInURLFragmentInFROMClause() throws IOException {
-		options = new CSVOptions();
+		options = new CSVFormat();
 		String query1 = "SELECT * FROM <src/test/resources/simple.csv#header=absent> {}";
 		TarqlQuery tq1 = new TarqlParser(new StringReader(query1)).getResult();
 		assertSelect(tq1, binding(vars("a"), "\"x\""));

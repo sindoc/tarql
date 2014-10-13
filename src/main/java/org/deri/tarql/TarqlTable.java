@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.deri.tarql.csv.CSVFormat;
+
 import com.hp.hpl.jena.sparql.algebra.Table;
 import com.hp.hpl.jena.sparql.algebra.table.TableBase;
 import com.hp.hpl.jena.sparql.core.Var;
@@ -15,28 +17,29 @@ import com.hp.hpl.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import com.hp.hpl.jena.util.iterator.ClosableIterator;
 
 /**
- * Implementation of ARQ's {@link Table} interface over a CSV file.
+ * Implementation of ARQ's {@link Table} interface over a tabular file.
  * Supports opening multiple iterators over the input, which
- * will lead to multiple passes over the input CSV file.
+ * will lead to multiple passes over the input file if streaming
+ * is supported for the file format.
  * Connects to the input as lazily as possible, while still
  * supporting the entire Table interface including {@link #size()}.
  */
-public class CSVTable extends TableBase implements Table {
+public class TarqlTable extends TableBase implements Table {
 	private final InputStreamSource source;
-	private final CSVOptions options;
+	private final TableFormat format;
 	private final List<ClosableIterator<Binding>> openIterators = new ArrayList<ClosableIterator<Binding>>();
 	private ClosableIterator<Binding> nextParser = null;
 	private List<Var> varsCache = null;
 	private Boolean isEmptyCache = null;
 	private Integer sizeCache = null;
 	
-	public CSVTable(InputStreamSource source) {
-		this(source, new CSVOptions());
+	public TarqlTable(InputStreamSource source) {
+		this(source, new CSVFormat());
 	}
 
-	public CSVTable(InputStreamSource source, CSVOptions options) {
+	public TarqlTable(InputStreamSource source, TableFormat format) {
 		this.source = source;
-		this.options = options;
+		this.format = format;
 	}
 	
 	@Override
@@ -137,7 +140,7 @@ public class CSVTable extends TableBase implements Table {
 	
 	private void ensureHasParser() {
 		if (nextParser == null) {
-			CSVParser parser = createParser();
+			TableParser parser = createParser();
 			if (varsCache == null) {
 				varsCache = parser.getVars();
 			}
@@ -148,9 +151,9 @@ public class CSVTable extends TableBase implements Table {
 		}
 	}
 	
-	private CSVParser createParser() {
+	private TableParser createParser() {
 		try {
-			CSVParser result = options.openParserFor(source);
+			TableParser result = format.openParserFor(source);
 			openIterators.add(result);
 			return result;
 		} catch (IOException ex) {

@@ -1,7 +1,12 @@
 package org.deri.tarql;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+
+import org.deri.tarql.csv.CSVFormat;
 
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
@@ -11,7 +16,9 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.algebra.Table;
+import com.hp.hpl.jena.sparql.algebra.table.TableData;
 import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.syntax.Element;
 import com.hp.hpl.jena.sparql.syntax.ElementData;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
@@ -24,34 +31,60 @@ import com.hp.hpl.jena.util.iterator.NullIterator;
  * iterator over triples.
  */
 public class TarqlQueryExecution {
-	private final CSVTable table;
+	private final InputStreamSource source;
+	private final TableFormat format;
 	private final TarqlQuery tq;
+	private Table table = null;
 
 	/**
 	 * Sets up a new query execution.
 	 * 
 	 * @param source The input CSV file
-	 * @param options Configuration options for the CSV file
+	 * @param format Configuration options for the CSV file
 	 * @param query The input query
 	 */
-	public TarqlQueryExecution(InputStreamSource source, CSVOptions options, TarqlQuery query) {
-		if (options == null) {
-			options = new CSVOptions();
+	public TarqlQueryExecution(InputStreamSource source, TableFormat format, TarqlQuery query) {
+		if (format == null) {
+			format = new CSVFormat();
 		}
-		if (options.hasColumnNamesInFirstRow() == null) {
+		if (format.hasColumnNamesInFirstRow() == null) {
 			// Presence or absence of header row was not specified on command line or FROM clause.
 			// So we fall back to the convention where OFFSET 1 in the query
 			// indicates that a header is present. To make that work, we
 			// set the OFFSET to 0 and tell the parser to gobble up the first
 			// row for column names.
-			options = new CSVOptions(options);
 			Query firstQuery = query.getQueries().get(0);
+			final boolean columnNamesInFirstRow;
 			if (firstQuery.getOffset() == 1) {
-				options.setColumnNamesInFirstRow(true);
+				columnNamesInFirstRow = true;
 				firstQuery.setOffset(0);
+			} else {
+				columnNamesInFirstRow = false;
 			}
+			final TableFormat wrapped = format;
+			format = new TableFormat() {
+				@Override
+				public boolean supportsStreaming() {
+					return wrapped.supportsStreaming();
+				}
+				@Override
+				public Boolean hasColumnNamesInFirstRow() {
+					return columnNamesInFirstRow;
+				}
+				@Override
+				public TableParser openParserFor(InputStreamSource source)
+						throws IOException {
+					return wrapped.openParserFor(source);
+				}
+				@Override
+				public Reader openReaderFor(InputStreamSource source)
+						throws IOException {
+					return wrapped.openReaderFor(source);
+				}
+			};
 		}
-		table = new CSVTable(source, options);
+		this.source = source;
+		this.format = format;
 		tq = query;
 	}
 
@@ -108,6 +141,7 @@ public class TarqlQueryExecution {
 	}
 
 	public void exec(Model model) throws IOException {
+		initTable();
 		for (Query q: tq.getQueries()) {
 			modifyQuery(q, table);
 			QueryExecution ex = QueryExecutionFactory.create(q, model);
@@ -116,6 +150,7 @@ public class TarqlQueryExecution {
 	}
 
 	public Iterator<Triple> execTriples() throws IOException {
+		initTable();
 		Model model = ModelFactory.createDefaultModel();
 		ExtendedIterator<Triple> result = new NullIterator<Triple>();
 		for (Query q: tq.getQueries()) {
@@ -140,5 +175,18 @@ public class TarqlQueryExecution {
 	
 	public void close() {
 		table.close();
+	}
+
+	private void initTable() throws IOException {
+		if (format.supportsStreaming()) {
+			table = new TarqlTable(source, format);
+			return;
+		}
+		List<Binding> rows = new ArrayList<Binding>();
+		TableParser parser = format.openParserFor(source);
+		while (parser.hasNext()) {
+			rows.add(parser.next());
+		}
+		table = new TableData(parser.getVars(), rows);
 	}
 }

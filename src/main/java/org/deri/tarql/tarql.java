@@ -10,7 +10,8 @@ import java.util.jar.Manifest;
 import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.deri.tarql.CSVOptions.ParseResult;
+import org.deri.tarql.csv.CSVFormat;
+import org.deri.tarql.csv.CSVFormat.ParseResult;
 
 import arq.cmdline.ArgDecl;
 import arq.cmdline.CmdGeneral;
@@ -62,7 +63,7 @@ public class tarql extends CmdGeneral {
 	private final ArgDecl escapeArg = new ArgDecl(true, "escapechar", "p");
 	
 	private String queryFile;
-	private List<String> csvFiles = new ArrayList<String>();
+	private List<String> files = new ArrayList<String>();
 	private Boolean header = null;
 	private boolean testQuery = false;
 	private String encoding = null;
@@ -108,7 +109,7 @@ public class tarql extends CmdGeneral {
 		}
 		queryFile = getPositionalArg(0);
 		for (int i = 1; i < getPositional().size(); i++) {
-			csvFiles.add(getPositionalArg(i));
+			files.add(getPositionalArg(i));
 		}
 		if (hasArg(withHeaderArg)) {
 			header = true;
@@ -159,30 +160,30 @@ public class tarql extends CmdGeneral {
 			if (testQuery) {
 				q.makeTest();
 			}
-			CSVOptions options = new CSVOptions();
+			CSVFormat csvFormat = new CSVFormat();
 			if (header != null) {
-				options.setColumnNamesInFirstRow(header);
+				csvFormat.setColumnNamesInFirstRow(header);
 			}
 			if (encoding != null) {
-				options.setEncoding(encoding);
+				csvFormat.setEncoding(encoding);
 			}
 			if (delimiter != null) {
-				options.setDelimiter(delimiter);
+				csvFormat.setDelimiter(delimiter);
 			}
 			if (quote != null) {
-				options.setQuoteChar(quote);
+				csvFormat.setQuoteChar(quote);
 			}
 			if (escape != null) {
-				options.setEscapeChar(escape);
+				csvFormat.setEscapeChar(escape);
 			}
-			if (csvFiles.isEmpty()) {
-				processResults(TarqlQueryExecutionFactory.create(q, options));
+			if (files.isEmpty()) {
+				processResults(TarqlQueryExecutionFactory.create(q, csvFormat));
 			} else {
-				for (String csvFile: csvFiles) {
-					ParseResult parseResult = CSVOptions.parseIRI(csvFile);
+				for (String file: files) {
+					ParseResult parseResult = CSVFormat.parseIRI(file);
 					processResults(TarqlQueryExecutionFactory.create(q, 
 							InputStreamSource.fromFilenameOrIRI(parseResult.getRemainingIRI()), 
-							parseResult.getOptions(options)));
+							parseResult.getOptions(csvFormat)));
 				}
 			}
 			if (resultTripleIterator.hasNext()) {

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.deri.tarql.csv.CSVFormat;
 import org.junit.Test;
 
 import com.hp.hpl.jena.sparql.core.Var;
@@ -29,7 +30,7 @@ public class CSVTableTest {
 	
 	@Test
 	public void testEmpty() throws IOException {
-		CSVTable table = new CSVTable(InputStreamSource.fromString(""));
+		TarqlTable table = new TarqlTable(InputStreamSource.fromString(""));
 		assertTrue(table.isEmpty());
 		assertEquals(0, table.size());
 		assertEquals(vars("ROWNUM"), table.getVars());
@@ -39,9 +40,9 @@ public class CSVTableTest {
 	
 	@Test
 	public void testSimpleTable() throws IOException {
-		CSVOptions options = new CSVOptions();
+		CSVFormat options = new CSVFormat();
 		options.setColumnNamesInFirstRow(false);
-		CSVTable table = new CSVTable(InputStreamSource.fromString("Alice,Smith\nBob,Cook"), options);
+		TarqlTable table = new TarqlTable(InputStreamSource.fromString("Alice,Smith\nBob,Cook"), options);
 		assertFalse(table.isEmpty());
 		assertEquals(2, table.size());
 		List<Var> vars = vars("a", "b", "ROWNUM");
@@ -53,9 +54,9 @@ public class CSVTableTest {
 	
 	@Test
 	public void testMultipleParallelIterators() throws IOException {
-		CSVOptions options = new CSVOptions();
+		CSVFormat options = new CSVFormat();
 		options.setColumnNamesInFirstRow(false);
-		CSVTable table = new CSVTable(InputStreamSource.fromString("Alice,Smith\nBob,Cook"), options);
+		TarqlTable table = new TarqlTable(InputStreamSource.fromString("Alice,Smith\nBob,Cook"), options);
 		List<Var> vars = vars("a", "b", "ROWNUM");
 		Binding row1 = binding(vars, "\"Alice\"", "\"Smith\"", "1");
 		Binding row2 = binding(vars, "\"Bob\"", "\"Cook\"", "2");

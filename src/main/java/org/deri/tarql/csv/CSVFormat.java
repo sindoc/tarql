@@ -1,4 +1,4 @@
-package org.deri.tarql;
+package org.deri.tarql.csv;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,12 +8,16 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.deri.tarql.CharsetDetectingReader;
+import org.deri.tarql.InputStreamSource;
+import org.deri.tarql.TableFormat;
+
 /**
  * Configuration options for describing a CSV file. Also provides
  * convenience functions for creating {@link Reader}s and
  * {@link CSVParser}s based on these options.
  */
-public class CSVOptions {
+public class CSVFormat implements TableFormat {
 
 	/**
 	 * Extracts a CSVOptions object from the fragment part of a
@@ -24,7 +28,7 @@ public class CSVOptions {
 	 * parse result.
 	 */
 	public static ParseResult parseIRI(String iri) {
-		CSVOptions result = new CSVOptions();
+		CSVFormat result = new CSVFormat();
 		int hash = iri.indexOf("#");
 		if (hash == -1 || hash == iri.length() - 1) {
 			return new ParseResult(iri, result);
@@ -125,19 +129,19 @@ public class CSVOptions {
 	 */
 	public static class ParseResult {
 		private final String iri;
-		private final CSVOptions options;
-		public ParseResult(String iri, CSVOptions options) {
+		private final CSVFormat options;
+		public ParseResult(String iri, CSVFormat options) {
 			this.iri = iri;
 			this.options = options;
 		}
 		public String getRemainingIRI() {
 			return iri;
 		}
-		public CSVOptions getOptions() {
+		public CSVFormat getOptions() {
 			return options;
 		}
-		public CSVOptions getOptions(CSVOptions defaults) {
-			CSVOptions result = new CSVOptions();
+		public CSVFormat getOptions(CSVFormat defaults) {
+			CSVFormat result = new CSVFormat();
 			result.overrideWith(defaults);
 			result.overrideWith(options);
 			return result;
@@ -153,13 +157,13 @@ public class CSVOptions {
 	/**
 	 * Creates a new instance with default values.
 	 */
-	public CSVOptions() {}
+	public CSVFormat() {}
 	
 	/**
 	 * Creates a new instance and initializes it with values
 	 * from another instance.
 	 */
-	public CSVOptions(CSVOptions defaults) {
+	public CSVFormat(CSVFormat defaults) {
 		overrideWith(defaults);
 	}
 
@@ -167,7 +171,7 @@ public class CSVOptions {
 	 * Override values in this object with those from the other. Anything
 	 * that is <code>null</code> in the other object will be ignored.
 	 */
-	public void overrideWith(CSVOptions other) {
+	public void overrideWith(CSVFormat other) {
 		if (other.encoding != null) {
 			this.encoding = other.encoding;
 		}
@@ -216,6 +220,7 @@ public class CSVOptions {
 	 * <code>null</code> means unknown.
 	 * The default is <code>null</code>.
 	 */
+	@Override
 	public Boolean hasColumnNamesInFirstRow() {
 		return columnNamesInFirstRow;
 	}
@@ -270,6 +275,7 @@ public class CSVOptions {
 	 * Creates a new {@link CSVParser} for a given {@link InputStreamSource}
 	 * with the options of this instance.
 	 */
+	@Override
 	public CSVParser openParserFor(InputStreamSource source) throws IOException {
 		return new CSVParser(openReaderFor(source), 
 				columnNamesInFirstRow == null ? true : columnNamesInFirstRow,
@@ -280,10 +286,16 @@ public class CSVOptions {
 	 * Creates a new {@link Reader} for a given {@link InputStreamSource}
 	 * with the options of this instance.
 	 */
+	@Override
 	public Reader openReaderFor(InputStreamSource source) throws IOException {
 		if (encoding == null) {
 			return new CharsetDetectingReader(source.open());
 		}
 		return new InputStreamReader(source.open(), encoding);
+	}
+	
+	@Override
+	public boolean supportsStreaming() {
+		return true;
 	}
 }
